@@ -42,7 +42,7 @@ note that encrypted messages are [also authenticated](https://www.npmjs.com/pack
 
 makes an object `{ ciphertext, from_pubkey, to_pubkey, nonce }`
 
-## talk.decrypt(message, my_keypair
+### talk.decrypt(message, my_keypair
 
 returns an object `{ body, from_pubkey, to_pubkey }` or null
 
