@@ -1,6 +1,6 @@
 {
   "name": "real-talk",
-  "version": "1.0.2",
+  "version": "2.0.0",
   "description": "a light protocol for encrypted, decrypting, signing and verifying JSON objects, with messages that can be easily serialized & sent over the wire (converted to/from Uint8Arrays underneath)",
   "main": "src/index.js",
   "scripts": {
@@ -13,7 +13,7 @@
   "author": "elsehow",
   "license": "BSD-2-Clause",
   "dependencies": {
-    "halite": "^1.0.2",
+    "halite": "^2.1.2",
     "json-buffer": "^2.0.11",
     "typedarray-to-buffer": "^3.1.2"
   },

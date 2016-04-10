@@ -1,81 +1,80 @@
 # real-talk
 
-a light protocol for encrypted, decrypting, signing and verifying JSON objects, with messages that can be easily serialized & sent over the wire (converted to/from Uint8Arrays underneath)
+a light protocol for encrypting & decrypting, or verifying & signing, JSON objects.
 
-depends on [halite](https://github.com/elsehow/halite)
+the focus is on payloads that can be sent over the wire without any transformations. 
 
-## installation
+## install
 
     npm install real-talk
 
-## example
+## use
+
+### encrypt / decrypt
 
 ```javascript
-var halite = require('halite')
 var talk = require('real-talk')
 
-// now i'll encrypt a message to you
-var your_kp = halite.keypair()
-var your_pubkey = halite.pk(your_kp)
-var encrypted = talk.encrypted(o, my_kp, your_pubkey)
-// now let's simulate a "round trip" by serializing it
-var json = JSON.stringify(talk.stringify(encrypted))
-// (we can send this json over the wire now)
+var o = {
+  muy: 'buena',
+  onda: null,
+}
 
-// now you decrypt it
-var parsed = talk.parse(JSON.parse(json))
-var decrypted = talk.decrypt(parsed, your_kp, my_pubkey)
+var myKeypair = talk.keypair()
+var yourKeypair = talk.keypair()
+var encrypted = talk.encrypted(o, myKeypair, yourKeypair.publicKey)
+var decrypted = talk.decrypt(encrypted, yourKeypair)
 
-console.log(
-  decrypted.from_pubkey === my_pubkey,
-  decrypted.to_pubkey === your_pubkey,
-  decrypted.body === o,
-)
-// > true true true
+console.log(decrypted.body)
+// > { muy: 'buena', onda: 'null' }
+```
+
+### sign / verify
+
+```javascript
+var talk = require('real-talk')
+
+var o = {
+  muy: 'buena',
+  onda: null,
+}
+var sign_kp = talk.signKeypair()
+var signed = talk.signed(o, sign_kp)
+console.log(typeof signed)
+// > 'string'
+talk.verify(signed.body)
+// > { muy: 'buena', onda: 'null' }
 ```
 
 note that encrypted messages are [also authenticated](https://www.npmjs.com/package/tweetnacl)
 
-## api
+## encrypt / decrypt api
+
+### talk.keypair()
+
+returns a nacl keypair `{publicKey, secretKey}` for encryting and decrypting 
 
 ### talk.encrypted(obj, my_keypair, your_pubkey)
 
-makes an object `{ ciphertext, from_pubkey, to_pubkey, nonce }`
+returns a string
 
-### talk.decrypt(message, my_keypair
+### talk.decrypt(str, my_keypair
 
-returns an object `{ body, from_pubkey, to_pubkey }` or null
+returns an object `{ body, from_pubkey, to_pubkey }` or `null`
 
-### talk.unencrypted(obj, my_keypair)
+## sign / verify api
 
-makes an object `{ body, from_pubkey }`
+### talk.signKeypair()
 
-```javascript
-var my_kp = halite.keypair()
+returns a nacl keypair `{publicKey, secretKey}` for signing and verifying
 
-var o = {
-  title: 'hi',
-  post: 'whats up',
-}
+### talk.sign(obj, my_keypair)
 
-var post = talk.unencrypted(o, my_kp)
+returns a string
 
-var my_pubkey = halite.pk(my_kp)
-console.log(
-  post.body === o,
-  post.from_pubkey === my_pubkey,
-)
-// > true true
+### talk.verify(str)
 
-```
-
-### talk.stringify(message)
-
-turns encrypted or unencrypted messages into a format that can be `JSON.stringify`d
-
-### talk.parse(stringified_message)
-
-`talk.parse(talk.stringify(message)) === message`
+returns an object `{body, from_keypair}` or `null`
 
 ## license
 

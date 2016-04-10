@@ -4,28 +4,6 @@ const halite = require('halite')
 const jsonb = require('json-buffer')
 const toBuffer = require('typedarray-to-buffer')
 
-// this package makes json-serializeable objects
-// of the form
-//
-//   { ciphertext, from_pubkey, to_pubkey, nonce }
-//
-// or
-//
-//   { body, from_pubkey }
-//
-// these objects are intended to go in the `value` field
-// of a hyperlog node. encrypted and unencrypted objects are
-// generated methods `encrypted` and `unencrypted` , below
-//
-// additionally, we provide a decryption function
-//
-//   decrypt (encrypted)
-//
-// which returns an object
-//
-//   { body, from_pubkey, to_pubkey }
-//
-
 function serialize (u8a) {
   return jsonb.stringify(toBuffer(u8a))
 }
@@ -34,37 +12,56 @@ function unserialize (str) {
   return new Uint8Array(jsonb.parse(str))
 }
 
+function sign (obj, sk) {
+  var str    = JSON.stringify(obj)
+  var signed = halite.sign(str, sk)
+  return signed
+}
+
+function verify (arr, pk) {
+  var ver = halite.verify(arr, pk)
+  var obj = null
+  try {
+    obj = JSON.parse(
+      ver.replace(/\\'/g, "'")
+    )
+  } catch (e) {
+    obj = {}
+  }
+  return obj
+}
+
 function transform (m, op) {
   function tr (key) {
     if (m[key])
       m[key] = op(m[key])
   }
-  var keys = ['from_pubkey', 'to_pubkey', 'ciphertext', 'nonce']
+  var keys = ['from_pubkey', 'to_pubkey', 'ciphertext', 'nonce', 'signed']
   keys.forEach(tr)
   return m
 }
 
+function stringify (m) {
+  return JSON.stringify(transform(m, serialize))
+}
+
+function parse (m) {
+  return transform(JSON.parse(m), unserialize)
+}
+
 module.exports = {
+
+  keypair: halite.keypair,
+
+  signKeypair: halite.signKeypair,
 
   serialize: serialize,
 
   unserialize: unserialize,
-  
-  stringify: (m) => {
-    return transform(m, serialize)
-  },
 
-  parse: (m) => {
-    return transform(m, unserialize)
-  },
+  stringify:stringify,
 
-  // => { body, from_pubkey }
-  unencrypted:  (obj, my_keypair) => {
-    return {
-      body: obj,
-      from_pubkey: halite.pk(my_keypair),
-    }
-  },
+  parse: parse,
 
   // => { ciphertext, from_pubkey, to_pubkey, nonce }
   encrypted: (obj, from_keypair, to_pubkey) => {
@@ -73,34 +70,49 @@ module.exports = {
     let nonce = halite.makenonce()
     let from_sk = halite.sk(from_keypair)
     let from_pk = halite.pk(from_keypair)
-    let ciphertext = halite.encrypt(cleartext,
-                                    nonce,
-                                    to_pubkey,
-                                    from_sk)
-    return {
+    let ciphertext = halite.encrypt(cleartext, nonce, to_pubkey, from_sk)
+    let o = {
     ciphertext: ciphertext,
       nonce: nonce,
       from_pubkey: from_pk,
       to_pubkey: to_pubkey,
     }
+
+    return stringify(o)
   },
+
 
   // => { body, from_pubkey, to_pubkey }
   decrypt: (encrypted, keypair) => {
+    encrypted = parse(encrypted)
     let to = encrypted.to_pubkey
     let from = encrypted.from_pubkey
     let nonce = encrypted.nonce
     let ctxt = encrypted.ciphertext
     let my_sk = halite.sk(keypair)
-    let body = halite.decrypt(ctxt,
-                              nonce,
-                              from,
-                              my_sk)
-    return {
+    let body = halite.decrypt(ctxt, nonce, from, my_sk)
+    var v = {
       body: JSON.parse(body),
       from_pubkey: from,
       to_pubkey: to
     }
+    return v ? v : null
+  },
+
+  signed: (o, kp) => {
+    return stringify({
+      signed: sign(o, halite.sk(kp)),
+      from_pubkey: halite.pk(kp),
+    })
+  },
+
+  verify: (str, pk) => {
+    var p = parse(str)
+    var v = {
+      body: verify(p.signed, p.from_pubkey),
+      from_pubkey: p.from_pubkey,
+    }
+    return v ? v : null
   },
 
 }
