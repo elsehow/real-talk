@@ -90,13 +90,17 @@ module.exports = {
     let nonce = encrypted.nonce
     let ctxt = encrypted.ciphertext
     let my_sk = halite.sk(keypair)
-    let body = halite.decrypt(ctxt, nonce, from, my_sk)
-    var v = {
-      body: JSON.parse(body),
-      from_pubkey: from,
-      to_pubkey: to
+    try {
+      let body = halite.decrypt(ctxt, nonce, from, my_sk)
+      var v = {
+        body: JSON.parse(body),
+        from_pubkey: from,
+        to_pubkey: to
+      }
+      return v ? v : null
+    } catch (e) {
+      return null
     }
-    return v ? v : null
   },
 
   signed: (o, kp) => {
@@ -108,11 +112,15 @@ module.exports = {
 
   verify: (str, pk) => {
     var p = parse(str)
-    var v = {
-      body: verify(p.signed, p.from_pubkey),
-      from_pubkey: p.from_pubkey,
+    try {
+      var v = {
+        body: verify(p.signed, p.from_pubkey),
+        from_pubkey: p.from_pubkey,
+      }
+      return v ? v : null
+    } catch (e) {
+      return null
     }
-    return v ? v : null
   },
 
 }
