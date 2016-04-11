@@ -76,6 +76,16 @@ returns a string
 
 returns an object `{body, from_keypair}` or `null`
 
+## utility api
+
+### talk.serialize(u8a)
+
+turn a Uint8Array into a string
+
+### talk.unserialize(str)
+
+turn a string produced by `talk.serialize` into a Uint8Array
+
 ## license
 
 BSD

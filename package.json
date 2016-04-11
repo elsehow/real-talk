@@ -1,6 +1,6 @@
 {
   "name": "real-talk",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "a light protocol for encrypted, decrypting, signing and verifying JSON objects, with messages that can be easily serialized & sent over the wire (converted to/from Uint8Arrays underneath)",
   "main": "src/index.js",
   "scripts": {
